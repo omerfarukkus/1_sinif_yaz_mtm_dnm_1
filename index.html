@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İnteraktif Matematik Testi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #3a5a40; /* Koyu yeşil arka plan */
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chalkboard {
+            background-color: #3d405b;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            border: 12px solid #8d5b4c;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(0,0,0,0.6);
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 600px;
+            margin: 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .option-button {
+            border-width: 4px;
+            font-weight: 700;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        .option-button:hover:not(:disabled) {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+        }
+        .option-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .star {
+            width: 60px;
+            height: 60px;
+            fill: #4a4e69; /* Boş yıldız rengi */
+            transition: fill 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+        .star.filled {
+            fill: #ffd60a; /* Dolu yıldız rengi */
+            transform: scale(1.1);
+        }
+        .toast {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            z-index: 1000;
+            transition: top 0.5s ease-in-out;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .toast.show {
+            top: 20px;
+        }
+        .toast.correct { background-color: #588157; }
+        .toast.incorrect { background-color: #c9184a; }
+        .heart {
+            font-size: 2rem;
+            color: #ff4d6d;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+        .heart.lost {
+            transform: scale(0.8);
+            opacity: 0.3;
+        }
+        .highlight {
+            color: #fca311; /* Parlak tebeşir rengi */
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="quiz-container" class="chalkboard">
+        <!-- Başlık ve Canlar -->
+        <div class="flex justify-between items-center mb-4 border-b-2 border-white/20 pb-3">
+            <h2 id="question-counter" class="text-lg sm:text-xl font-bold">Soru 1 / 12</h2>
+            <div id="lives-container" class="flex space-x-2">
+                <span class="heart">❤️</span>
+                <span class="heart">❤️</span>
+                <span class="heart">❤️</span>
+            </div>
+        </div>
+
+        <!-- Soru Alanı -->
+        <div id="question-area" class="flex-grow flex flex-col justify-center">
+            <div id="question-image" class="text-5xl sm:text-7xl mb-4 text-center h-24 flex items-center justify-center"></div>
+            <p id="question-text" class="text-xl sm:text-2xl font-bold mb-6 min-h-[120px] text-center px-2 py-4"></p>
+            <div id="options-container" class="grid grid-cols-1 gap-3 sm:gap-4">
+                <!-- Seçenekler buraya eklenecek -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Sonuç Ekranı -->
+    <div id="result-container" class="chalkboard hidden text-center">
+        <h2 id="result-title" class="text-4xl font-bold mb-4">Test Bitti!</h2>
+        <p id="result-score" class="text-2xl mb-6"></p>
+        <div id="stars-container" class="flex justify-center space-x-4 mb-8">
+             <svg class="star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+             <svg class="star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+             <svg class="star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+        </div>
+        <button id="restart-button" class="bg-yellow-500 text-gray-800 px-8 py-3 rounded-lg text-xl font-bold transition-transform hover:scale-105">Tekrar Dene</button>
+    </div>
+
+    <!-- Uyarı Mesajı -->
+    <div id="toast-notification" class="toast"></div>
+
+    <script>
+        const questions = [
+            { question: "Tarık'ın <span class='highlight'>8</span> tane misketi vardı. Babası <span class='highlight'>4</span> misket daha verdi. Tarık'ın toplam kaç misketi oldu?", image: '', options: ["12", "13", "14"], answer: "12" },
+            { question: "Otobüste <span class='highlight'>19</span> yolcu vardı. İlk durakta <span class='highlight'>9</span> yolcu indi. Otobüste kaç yolcu kaldı?", image: '', options: ["9", "11", "10"], answer: "10" },
+            { question: "Aşağıdaki ritmik saymalardan hangisi <span class='highlight'>yanlıştır</span>?", image: '', options: ["10-20-30-40", "5-10-14-20", "2-4-6-8"], answer: "5-10-14-20" },
+            { question: "<span class='highlight'>'18'</span> sayısının okunuşu aşağıdakilerden hangisidir?", image: '', options: ["Sekiz", "Yirmi sekiz", "On sekiz"], answer: "On sekiz" },
+            { question: "<span class='highlight'>1 onluk</span> ve <span class='highlight'>4 birlikten</span> oluşan sayı hangisidir?", image: '', options: ["41", "14", "5"], answer: "14" },
+            { question: "<span class='highlight'>14 + ? = 20</span> işleminde '?' yerine hangi sayı gelmelidir?", image: '', options: ["6", "7", "8"], answer: "6" },
+            { question: "Aşağıdaki nesnelerden hangisi <span class='highlight'>küpe</span> benzer?", image: '🧊', options: ["Top", "Hediye Kutusu", "Kitap"], answer: "Hediye Kutusu" },
+            { question: "Annem pazardan <span class='highlight'>9</span> elma ve <span class='highlight'>5</span> portakal aldı. Toplam kaç meyve almıştır?", image: '', options: ["14", "15", "16"], answer: "14" },
+            { question: "<span class='highlight'>12 - 7 = ?</span> işleminin sonucu kaçtır?", image: '', options: ["6", "4", "5"], answer: "5" },
+            { question: "Aşağıdaki sayılardan hangisi diğerlerinden daha <span class='highlight'>küçüktür</span>?", image: '', options: ["13", "19", "9"], answer: "9" },
+            { question: "Cebimde <span class='highlight'>10₺</span> vardı. <span class='highlight'>5₺</span>'ye kalem aldım. Dedem <span class='highlight'>8₺</span> verdi. Şimdi kaç liram var?", image: '', options: ["13", "14", "15"], answer: "13" },
+            { question: "Yandaki saat kaçtır?", image: `<svg viewBox="0 0 100 100" class="w-24 h-24 inline-block"><circle cx="50" cy="50" r="48" stroke="#fff" stroke-width="2" fill="none" /><circle cx="50" cy="50" r="2" fill="#fff" /><text x="46" y="18" font-size="10" fill="#fff">12</text><text x="80" y="54" font-size="10" fill="#fff">3</text><text x="48" y="90" font-size="10" fill="#fff">6</text><text x="12" y="54" font-size="10" fill="#fff">9</text><line x1="50" y1="50" x2="20" y2="50" stroke="#fff" stroke-width="3" stroke-linecap="round" /><line x1="50" y1="50" x2="50" y2="15" stroke="#fff" stroke-width="2" stroke-linecap="round" /></svg>`, options: ["Saat üç", "Saat dokuz", "Saat on iki"], answer: "Saat dokuz" }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let lives = 3;
+
+        const quizContainer = document.getElementById('quiz-container');
+        const resultContainer = document.getElementById('result-container');
+        const questionCounter = document.getElementById('question-counter');
+        const questionText = document.getElementById('question-text');
+        const questionImage = document.getElementById('question-image');
+        const optionsContainer = document.getElementById('options-container');
+        const livesContainer = document.getElementById('lives-container');
+        const restartButton = document.getElementById('restart-button');
+        const toast = document.getElementById('toast-notification');
+
+        const optionColors = [
+            'border-cyan-400 text-cyan-300 hover:bg-cyan-400/20',
+            'border-pink-400 text-pink-300 hover:bg-pink-400/20',
+            'border-amber-400 text-amber-300 hover:bg-amber-400/20'
+        ];
+
+        function startQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            lives = 3;
+            quizContainer.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+            Array.from(document.getElementById('stars-container').children).forEach(star => star.classList.remove('filled'));
+            updateLivesDisplay();
+            showQuestion();
+        }
+
+        function showQuestion() {
+            if (currentQuestionIndex >= questions.length || lives <= 0) {
+                showResults();
+                return;
+            }
+
+            const currentQuestion = questions[currentQuestionIndex];
+            questionCounter.textContent = `Soru ${currentQuestionIndex + 1} / ${questions.length}`;
+            questionText.innerHTML = currentQuestion.question;
+            
+            questionImage.innerHTML = currentQuestion.image || '';
+            
+            optionsContainer.innerHTML = '';
+
+            currentQuestion.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.className = `option-button p-3 sm:p-4 rounded-lg text-lg sm:text-xl ${optionColors[index]}`;
+                button.onclick = () => selectAnswer(button, option, currentQuestion.answer);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        function selectAnswer(button, selectedOption, correctAnswer) {
+            disableOptions();
+            if (selectedOption === correctAnswer) {
+                score++;
+                button.classList.add('bg-green-500', 'border-green-400', 'text-white');
+                showToast('Doğru!', 'correct');
+            } else {
+                lives--;
+                updateLivesDisplay();
+                button.classList.add('bg-red-500', 'border-red-400', 'text-white');
+                showToast('Yanlış!', 'incorrect');
+                Array.from(optionsContainer.children).forEach(btn => {
+                    if (btn.textContent === correctAnswer) {
+                        btn.classList.add('bg-green-500/50', 'border-green-400');
+                    }
+                });
+            }
+
+            setTimeout(() => {
+                currentQuestionIndex++;
+                showQuestion();
+            }, 1500);
+        }
+        
+        function disableOptions() {
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+        }
+
+        function updateLivesDisplay() {
+            const hearts = livesContainer.children;
+            for (let i = 0; i < 3; i++) {
+                hearts[i].classList.toggle('lost', i >= lives);
+            }
+        }
+
+        function showResults() {
+            quizContainer.classList.add('hidden');
+            resultContainer.classList.remove('hidden');
+
+            const correctAnswers = score;
+            const totalQuestions = questions.length;
+            document.getElementById('result-score').textContent = `${totalQuestions} sorudan ${correctAnswers} tanesini doğru bildin!`;
+            
+            const percentage = (correctAnswers / totalQuestions) * 100;
+            const stars = document.getElementById('stars-container').children;
+            
+            setTimeout(() => {
+                if (percentage >= 80) {
+                    stars[0].classList.add('filled');
+                    setTimeout(() => stars[1].classList.add('filled'), 300);
+                    setTimeout(() => stars[2].classList.add('filled'), 600);
+                    document.getElementById('result-title').textContent = "Harikasın! 🌟";
+                } else if (percentage >= 50) {
+                    stars[0].classList.add('filled');
+                    setTimeout(() => stars[1].classList.add('filled'), 300);
+                    document.getElementById('result-title').textContent = "Çok İyi! 👍";
+                } else if (correctAnswers > 0) {
+                     stars[0].classList.add('filled');
+                     document.getElementById('result-title').textContent = "İyi deneme! 😊";
+                } else {
+                     document.getElementById('result-title').textContent = "Tekrar Dene! 💪";
+                }
+            }, 200);
+        }
+        
+        function showToast(message, type) {
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 1500);
+        }
+
+        restartButton.addEventListener('click', startQuiz);
+
+        // İlk başlangıç
+        startQuiz();
+    </script>
+</body>
+</html>
